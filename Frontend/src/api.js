@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "https://campusrideshare-47j1.onrender.com/api/users",
+  baseURL: process.env.REACT_APP_API_URL || "https://campusrideshare-wh2b.onrender.com/api",
 });
 
 api.interceptors.request.use((config) => {
@@ -13,5 +13,3 @@ api.interceptors.request.use((config) => {
 });
 
 export default api;
-
-
