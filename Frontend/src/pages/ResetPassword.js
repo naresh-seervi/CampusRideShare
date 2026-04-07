@@ -8,6 +8,10 @@ const ResetPassword = () => {
   const [status, setStatus] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
+  const passwordRule =
+    "Password must be at least 8 characters with uppercase, lowercase, number, and special character.";
+  const isStrongPassword = (value) =>
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(value);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,7 +30,11 @@ const ResetPassword = () => {
       setStatus("Code sent to your email. Check your inbox or spam.");
       setCodeSent(true);
     } catch (err) {
-      setStatus(err.response?.data?.message || "Unable to send reset code");
+      if (err.code === "ECONNABORTED") {
+        setStatus("Request timed out. Please retry and verify backend email settings.");
+      } else {
+        setStatus(err.response?.data?.message || "Unable to send reset code");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -45,6 +53,10 @@ const ResetPassword = () => {
     }
     if (form.password !== form.confirmPassword) {
       setStatus("Passwords do not match.");
+      return;
+    }
+    if (!isStrongPassword(form.password)) {
+      setStatus(passwordRule);
       return;
     }
     setSubmitting(true);
@@ -104,6 +116,7 @@ const ResetPassword = () => {
               Confirm password
               <input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} required />
             </label>
+            <small>{passwordRule}</small>
             <button className="btn" disabled={submitting}>
               {submitting ? "Updating..." : "Change password"}
             </button>
