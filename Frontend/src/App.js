@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Header from "./components/Header";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
@@ -36,6 +36,7 @@ const App = () => (
         <Route element={<ProtectedRoute roles={["admin"]} />}>
           <Route path="/admin" element={<AdminDashboard />} />
         </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </main>
     <footer className="app-footer">
