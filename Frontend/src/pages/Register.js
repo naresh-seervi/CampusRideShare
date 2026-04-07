@@ -134,6 +134,11 @@ const Register = () => {
   const [code, setCode] = useState("");
   const [step, setStep] = useState(1);
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const passwordRule =
+    "Password must be at least 8 characters with uppercase, lowercase, number, and special character.";
+  const isStrongPassword = (value) =>
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(value);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -142,31 +147,45 @@ const Register = () => {
 
   const submitRegistration = async (e) => {
     e.preventDefault();
+    setMessage("");
 
-    // 🔥🔥 FRONTEND EMAIL DOMAIN FILTER (ADDED)
     if (!form.email.toLowerCase().endsWith("@jecrcu.edu.in")) {
       setMessage("Only @jecrcu.edu.in emails are allowed!");
       return;
     }
-    // 🔥🔥 FILTER END
+    if (!isStrongPassword(form.password)) {
+      setMessage(passwordRule);
+      return;
+    }
 
+    setSubmitting(true);
     try {
       await register(form);
       setMessage("Check your email for the verification code.");
       setStep(2);
     } catch (err) {
-      setMessage(err.response?.data?.message || "Registration failed");
+      if (err.code === "ECONNABORTED") {
+        setMessage("Request timeout. Please check server/email configuration and try again.");
+      } else {
+        setMessage(err.response?.data?.message || "Registration failed");
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const verifyCode = async (e) => {
     e.preventDefault();
+    setMessage("");
+    setSubmitting(true);
     try {
       await api.post("/auth/verify-email", { email: form.email, code });
       alert("Email verified. You can now login.");
       navigate("/login");
     } catch (err) {
-      setMessage(err.response?.data?.message || "Invalid code");
+      setMessage(err.response?.data?.message || "Invalid or expired code");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -175,7 +194,7 @@ const Register = () => {
       <section className="card supporting-panel">
         <p className="eyebrow">Create Account</p>
         <h1 className="page-title">Welcome To</h1>
-        <h2 c>Campus Ride Share</h2>
+        <h2>Campus Ride Share</h2>
         {/* <p className="section-subtitle">
           Choose whether you ride or drive and gain access to a curated network of pre-verified campus commuters.
         </p>
@@ -219,7 +238,10 @@ const Register = () => {
             Password
             <input type="password" name="password" value={form.password} onChange={handleChange} required />
           </label>
-          <button className="btn">Register</button>
+          <small>{passwordRule}</small>
+          <button className="btn" disabled={submitting}>
+            {submitting ? "Registering..." : "Register"}
+          </button>
           {message && <small>{message}</small>}
           <Link to="/login">Already registered? Login</Link>
         </form>
@@ -231,7 +253,9 @@ const Register = () => {
             Code
             <input value={code} onChange={(e) => setCode(e.target.value)} required />
           </label>
-          <button className="btn">Verify</button>
+          <button className="btn" disabled={submitting}>
+            {submitting ? "Verifying..." : "Verify"}
+          </button>
           {message && <small>{message}</small>}
         </form>
       )}
