@@ -7,7 +7,18 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true },
     phone: { type: String, required: true },
     gender: { type: String, enum: ["male", "female", "other"], required: true },
-    password: { type: String, required: true },
+    password: {
+      type: String,
+      required: true,
+      minlength: 8,
+      validate: {
+        validator(value) {
+          return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(value);
+        },
+        message:
+          "Password must be at least 8 characters and include uppercase, lowercase, number, and special character",
+      },
+    },
     rating: { type: Number, default: 5 },
     ridesCompleted: { type: Number, default: 0 },
     role: { type: String, enum: ["student", "rider",], default: "student" },
