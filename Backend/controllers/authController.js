@@ -23,13 +23,44 @@ const sanitizeUser = (user) => ({
 });
 
 const generateCode = () => crypto.randomInt(100000, 999999).toString();
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
 exports.register = asyncHandler(async (req, res) => {
   const { name, email, phone, gender, password, role = "student" } = req.body;
 
+  if (!passwordRegex.test(password || "")) {
+    throw createError(
+      400,
+      "Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
+    );
+  }
+
   const existing = await User.findOne({ email });
   if (existing) {
-    throw createError(400, "Email already in use");
+    if (existing.isVerified) {
+      throw createError(400, "Email already in use");
+    }
+
+    existing.name = name;
+    existing.phone = phone;
+    existing.gender = gender;
+    existing.password = password;
+    existing.role = role === "rider" ? "rider" : "student";
+    existing.emailVerificationToken = generateCode();
+    existing.emailVerificationTokenExpires = Date.now() + 15 * 60 * 1000;
+    await existing.save();
+
+    await sendEmail({
+      to: email,
+      ...verificationTemplate(name, existing.emailVerificationToken),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Verification email sent. Please verify your email.",
+      data: sanitizeUser(existing),
+    });
+    return;
   }
 
   const allowedRoles = ["student", "rider", "admin"];
@@ -140,6 +171,12 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
 
 exports.resetPassword = asyncHandler(async (req, res) => {
   const { email, code, password } = req.body;
+  if (!passwordRegex.test(password || "")) {
+    throw createError(
+      400,
+      "Password must be at least 8 characters and include uppercase, lowercase, number, and special character"
+    );
+  }
   const user = await User.findOne({ email });
 
   if (!user || user.resetPasswordToken !== code || user.resetPasswordTokenExpires < Date.now()) {
