@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "https://campusrideshare-wh2b.onrender.com/api",
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:8000/api",
+  timeout: 20000,
 });
 
 api.interceptors.request.use((config) => {
@@ -13,3 +14,5 @@ api.interceptors.request.use((config) => {
 });
 
 export default api;
+
+
